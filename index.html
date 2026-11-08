@@ -28,7 +28,7 @@ header{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;margin-bott
 h1{font-size:24px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.01em}
 header p{margin:0;color:var(--muted);font-size:14px}
 .app{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.side{order:2}}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.side{order:0}}
 .side{display:grid;gap:14px;min-width:0}
 .main{display:grid;gap:16px;min-width:0}
 section.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
@@ -413,6 +413,16 @@ body.shell-open .sh-home{display:none}
 .v3mbtn{font:600 13px "Noto Sans KR",sans-serif;padding:7px 12px;min-height:38px;border:1px solid #c9d4ea;border-radius:10px;background:#fff;color:#5B6A86;cursor:pointer}
 .v3mbtn[aria-pressed="true"]{background:#0B4BD6;border-color:#0B4BD6;color:#fff}
 .v3dash{padding:8px 0 10px}
+
+.sh-mh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sh-zbtn{flex:none;font:600 12.5px "Noto Sans KR",sans-serif;padding:6px 10px;border:1px solid #c9d4ea;border-radius:9px;background:#fff;color:#0B4BD6;cursor:pointer}
+.sh-zoom{position:fixed;inset:0;z-index:60;background:rgba(10,20,50,.55)}
+.sh-zbox{position:fixed;top:0;left:0;background:#fff;display:flex;flex-direction:column;padding:12px 16px;box-sizing:border-box;transform-origin:top left}
+.sh-zhd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;font-size:15px;color:#0A1F5C}
+.sh-zx{font:700 13px "Noto Sans KR",sans-serif;padding:7px 12px;border:0;border-radius:10px;background:#0B4BD6;color:#fff;cursor:pointer}
+.sh-zb{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.sh-zb svg{width:100%;height:auto;max-height:100%;flex:1;min-height:0}
+.sh-zb .seg{align-self:flex-start;margin-bottom:4px}
 </style>
 <div class="wrap">
 <div id="shell" class="sh" role="dialog" aria-modal="true" aria-label="핫스팟 에이전트 안내">
@@ -489,8 +499,8 @@ body.shell-open .sh-home{display:none}
       <div class="sh-rail" id="shRail"></div>
       <button type="button" class="sh-btn" data-go="det">온도·흐름·3D 자세히 보기</button>
       <details class="sh-more" id="shMore"><summary>그래프와 SimScale 입력값 더 보기</summary>
-        <div class="sh-mh">핫스팟을 지나는 단면 온도 <small>(선택한 기준 1~5위)</small></div><div class="sh-g" id="shG1"></div>
-        <div class="sh-mh">유량을 바꿀 때 온도와 압력 <small>(선택한 기준 1~5위)</small></div><div class="sh-g" id="shG2"></div>
+        <div class="sh-mh"><span>핫스팟을 지나는 단면 온도 <small>(선택한 기준 1~5위)</small></span><button type="button" class="sh-zbtn" data-zoom="shG1" aria-label="핫스팟을 지나는 단면 온도 크게 보기">⤢ 크게</button></div><div class="sh-g" id="shG1"></div>
+        <div class="sh-mh"><span>유량을 바꿀 때 온도와 압력 <small>(선택한 기준 1~5위)</small></span><button type="button" class="sh-zbtn" data-zoom="shG2" aria-label="유량을 바꿀 때 온도와 압력 크게 보기">⤢ 크게</button></div><div class="sh-g" id="shG2"></div>
         <div class="sh-mh">SimScale 입력값 <small>(신뢰성 검증용)</small></div><pre class="sh-pre" id="shSim"></pre>
         <div class="sh-two"><button type="button" class="sh-mini" id="shCsv">결과표 저장 (.csv)</button><button type="button" class="sh-mini" id="shCopy">결과표 복사</button></div>
       </details>
@@ -507,6 +517,7 @@ body.shell-open .sh-home{display:none}
     <div class="sh-detb" id="shDetB"></div>
   </section>
   <div class="sh-toast" id="shToast" role="status" hidden></div>
+  <div class="sh-zoom" id="shZoom" hidden><div class="sh-zbox" id="shZbox"><div class="sh-zhd"><b id="shZt"></b><button type="button" class="sh-zx" id="shZx" aria-label="닫기">✕ 닫기</button></div><div class="sh-zb" id="shZb"></div></div></div>
 </div>
 
 <button type="button" class="sh-home" data-go="land">처음 화면</button>
@@ -536,7 +547,7 @@ body.shell-open .sh-home{display:none}
       <div class="row-h"><h2>핫스팟 <span class="tag">입력</span></h2><button id="addHs" type="button">추가</button></div>
       <div class="presets"><button type="button" id="resetHs">도면 위치로 되돌리기</button></div>
       <div id="hsList"></div>
-      <p class="note">큰 도면의 점선 칩 영역 안을 누르면 추가되고, 네모를 끌면 옮겨집니다. 지우려면 네모에 마우스를 올려 ✕를 누르거나, 터치 화면에서는 꾹 누르면 나오는 ✕를 누릅니다. 핫스팟을 옮기면 자동 최적 매니폴드 모양도 다시 찾습니다. 열유속 기본값은 논문 값(핫스팟 300, 바닥 50 W/cm²)입니다.</p>
+      <p class="note">큰 도면의 점선 칩 영역 안을 누르면 추가되고, 네모를 끌면 옮겨집니다. 지우려면 네모에 마우스를 올려 ✕를 누르거나, 터치 화면에서는 두 번 누르면 나오는 ✕를 누릅니다. 핫스팟을 옮기면 자동 최적 매니폴드 모양도 다시 찾습니다. 열유속 기본값은 논문 값(핫스팟 300, 바닥 50 W/cm²)입니다.</p>
     </section>
     <section class="box">
       <h2>유량까지 함께 찾기</h2>
@@ -2192,16 +2203,32 @@ shEl('shDirect').checked=!!S.direct;
 shEl('shDirect').addEventListener('change',()=>{S.direct=shEl('shDirect').checked;$('autoDirect').checked=S.direct;schedule()});
 $('autoDirect').addEventListener('change',()=>{shEl('shDirect').checked=$('autoDirect').checked});
 
+/* 그래프 크게 보기: 세로 화면이면 가로로 돌려서 꽉 차게 */
+let shZg=null;
+function shZoomFill(){if(!shZg)return;shEl('shZb').innerHTML=shEl(shZg).innerHTML;shEl('shZt').textContent=shEl(shZg).previousElementSibling.querySelector('span').childNodes[0].textContent.trim()}
+function shZoomLay(){const b=shEl('shZbox'),W=innerWidth,H=innerHeight;
+  if(H>W){b.style.width=H+'px';b.style.height=W+'px';b.style.transform=`translateX(${W}px) rotate(90deg)`}
+  else{b.style.width=W+'px';b.style.height=H+'px';b.style.transform='none'}}
+function shZoomOpen(g){shZg=g;shZoomFill();shZoomLay();shEl('shZoom').hidden=false}
+function shZoomClose(){shZg=null;shEl('shZoom').hidden=true;shEl('shZb').innerHTML=''}
+document.addEventListener('click',e=>{const z=e.target.closest('[data-zoom]');if(z){shZoomOpen(z.dataset.zoom);return}
+  if(e.target.closest('#shZx')||e.target.id==='shZoom'){shZoomClose();return}
+  if(e.target.closest('#shZb [data-swm]'))setTimeout(shZoomFill)});
+addEventListener('resize',()=>{if(shZg)shZoomLay()});
+addEventListener('hashchange',()=>{if(shZg)shZoomClose()});
+
 /* 큰 도면에서 핫스팟 지우기 */
 var HSX=-1;function hsShowX(i){HSX=i;document.querySelectorAll('#stage .hsg').forEach((g,k)=>g.classList.toggle('showx',k===i))}
 function hsDelete(i){if(!S.hs[i])return;HSX=-1;S.hs.splice(i,1);selHs=0;justDragged=true;drag=null;renderHs();schedule()}
 $('stage').addEventListener('pointerdown',e=>{const x=e.target.closest&&e.target.closest('.hsx');if(!x)return;e.preventDefault();e.stopImmediatePropagation();hsDelete(+x.dataset.hsx)},true);
 {let lp=null,p0=null;
-  $('stage').addEventListener('pointerdown',e=>{const t=e.target;if(t.dataset?.i===undefined||e.pointerType==='mouse')return;p0=[e.clientX,e.clientY];const i=+t.dataset.i;clearTimeout(lp);lp=setTimeout(()=>{hsShowX(i);try{navigator.vibrate&&navigator.vibrate(25)}catch(_){}},550)});
+  $('stage').addEventListener('pointerup',e=>{if(e.pointerType==='mouse'||!p0||p0[2]==null)return;const i=p0[2],now=performance.now();if(lp&&lp.i===i&&now-lp.t<400){lp=null;hsShowX(HSX===i?-1:i);try{navigator.vibrate&&navigator.vibrate(15)}catch(_){}}else lp={i,t:now}});
+  $('stage').addEventListener('pointerdown',e=>{const d=e.target.dataset;p0=[e.clientX,e.clientY,d&&d.i!==undefined?+d.i:null]},true);
   $('stage').addEventListener('pointerdown',e=>{if(HSX>=0&&!(e.target.closest&&e.target.closest('.hsx'))&&+(e.target.dataset?.i??-1)!==HSX)hsShowX(-1)},true);
-  $('stage').addEventListener('pointermove',e=>{if(p0&&Math.hypot(e.clientX-p0[0],e.clientY-p0[1])>12){clearTimeout(lp);p0=null}});
-  for(const ev of ['pointerup','pointercancel'])$('stage').addEventListener(ev,()=>{clearTimeout(lp);p0=null});
+  $('stage').addEventListener('pointermove',e=>{if(p0&&Math.hypot(e.clientX-p0[0],e.clientY-p0[1])>12){lp=null;p0=null}});
+  $('stage').addEventListener('pointercancel',()=>{lp=null;p0=null});
   $('stage').addEventListener('contextmenu',e=>{if(e.target.dataset?.i!==undefined)e.preventDefault()});}
 </script>
+
 
 </body></html>
